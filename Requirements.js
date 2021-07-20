@@ -74,7 +74,7 @@ update/add a new book to the publication
 
 Delete
 delete publication
-
+delete a publication from books and publication too
 */
 
 //====================================================================================================================

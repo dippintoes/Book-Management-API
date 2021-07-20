@@ -1,4 +1,4 @@
-const books = [
+let books = [
     {
       ISBN: "12345Book",
       title: "Getting started with MERN",
@@ -21,7 +21,7 @@ const books = [
       }
   ];
   
-  const author = [
+  let author = [
     {
       id: "1",
       name: "Rutuja Gosavi",
@@ -34,7 +34,7 @@ const books = [
     }
   ];
   
-  const publication = [
+  let publication = [
     {
       id: "1",
       name: "Penguin",
@@ -53,4 +53,3 @@ const books = [
 
   //HTTP client(helper) ---> Postman - to manage api's, to send request, to write auto documentation
 
-  
