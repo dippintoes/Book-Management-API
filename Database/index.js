@@ -53,5 +53,8 @@ let books = [
 
   //HTTP client(helper) ---> Postman - to manage api's, to send request, to write auto documentation
 
+  //model is document model of mongoDB
+  //How does this model know which documnet to use?
+  //----> use document name from mongoDB
 
   //you can have single file for all schamas but it's just not a good practise, so maintain separate file for one single file

@@ -11,6 +11,11 @@ const mongoose = require("mongoose");
 //Database
 const database = require("./Database/index");
 
+//we have to include models
+
+const BookModels = require("./Database/book");
+const AuhtorModels = require("./Database/author");
+const PublicationModels = require("./Database/publication");
 
 //initializing express
 const Paradigm = express();
