@@ -13,9 +13,9 @@ const database = require("./Database/index");
 
 //we have to include models
 
-const BookModels = require("./Database/book");
-const AuhtorModels = require("./Database/author");
-const PublicationModels = require("./Database/publication");
+const BookModel = require("./Database/book");
+const AuthorModel = require("./Database/author");
+const PublicationModel = require("./Database/publication");
 
 //initializing express
 const Paradigm = express();
@@ -58,12 +58,17 @@ Parameters: None
 Method : Get
 */
 
+Paradigm.get("/", async (req,res)=>{
+    const getAllBooks = await BookModel.find();
+return res.json({books: getAllBooks});
+});
 
+/*
 Paradigm.get("/", (req,res)=>{
 return res.json({books: database.books});
 });
 
-
+*/
 /*
 Route :  /is/
 Description : to get specified books
@@ -72,10 +77,12 @@ Parameters: isbn
 Method : Get
 */
 
-Paradigm.get("/is/:isbn",(req,res)=>{
-const getSpecificBook = database.books.filter((book)=>book.ISBN === req.params.isbn);
-
-if(getSpecificBook.length === 0)
+Paradigm.get("/is/:isbn", async (req,res)=>{
+    const getSpecificBook = await BookModel.findOne({ISBN: req.params.isbn});
+/*const getSpecificBook = database.books.filter((book)=>book.ISBN === req.params.isbn);*/
+//getSpecificBook.length === 0
+// In mongoDB dont find data it returns null --> False
+if(!getSpecificBook)
 {
     return res.json({error: `No book found for the ISBN of ${req.params.isbn}`});
 }
@@ -93,15 +100,20 @@ Parameters: category
 Method : Get
 */
 
-Paradigm.get("/c/:category",(req, res) => {
-const getSpecificBooks = database.books.filter((book)=>book.category.includes(req.params.category)
-);
+Paradigm.get("/c/:category", async (req, res) => {
+const getCategory = await BookModel.findOne({
+    category: req.params.category
+});
+    /*
+const getCategory = database.books.filter((book)=>book.category.includes(req.params.category)
+);*/
+//getCategory.length === 0
 //include get the value and match it with the category array but only if contains only strings
-if(getSpecificBooks.length === 0)
+if(!getCategory)
 {
     return res.json({error: `No book found for the category of ${req.params.category}`});
 }
-return res.json({Category: getSpecificBooks});
+return res.json({Category: getCategory});
 });
 
 /*
@@ -112,10 +124,14 @@ Parameters: id
 Method : Get
 */
 
-Paradigm.get("/books/author/:id",(req, res) => {
-    const getBookBySpecificAuthor = database.books.filter((book)=>book.author.includes(req.params.id)); 
+Paradigm.get("/books/author/:id",async (req, res) => {
+
+    const getBookBySpecificAuthor = await BookModel.findOne({
+        author : req.params.id
+    })
+   // const getBookBySpecificAuthor = database.books.filter((book)=>book.author.includes(req.params.id)); 
     //include get the value and match it with the category array but only if contains only strings   
-    if(getBookBySpecificAuthor.length === 0)
+    if(!getBookBySpecificAuthor)
     {
         return res.json({error: `No book found for the author ${req.params.id}`});
     }   
@@ -132,10 +148,13 @@ Method : Post
 */
 
 
-Paradigm.post("/books/new",(req,res)=>{
+Paradigm.post("/books/new",async (req,res)=>{
     const {newBook}= req.body;
-    database.books.push(newBook);
-    return res.json({Books : database.books, message: "New Books was added!!"});
+
+    BookModel.create(newBook);
+
+   // database.books.push(newBook);
+    return res.json({message: "New Books was added!!"});
     });
     
 
@@ -237,9 +256,9 @@ Parameters:
 Method : Get
 */
 
-Paradigm.get("/author",(req, res) => {
-   
-    return res.json({author: database.author});
+Paradigm.get("/author",async (req, res) => {
+   const getAllAuthors = await AuthorModel.find();
+    return res.json({author: getAllAuthors});
 });
 
     
@@ -251,9 +270,10 @@ Parameters: id
 Method : Get
 */
 
-Paradigm.get("/author/:id",(req, res) => {
-    const getBookBySpecificAuthors = database.author.filter((author)=>author.id===req.params.id);    
-    if(getBookBySpecificAuthors.length === 0)
+Paradigm.get("/author/:id",async (req, res) => {
+    const getBookBySpecificAuthors =await  AuthorModel.findOne({id:req.params.id});
+    //const getBookBySpecificAuthors = database.author.filter((author)=>author.id===req.params.id);    
+    if(!getBookBySpecificAuthors)
     {
         return res.json({error: `No author found with given id: ${req.params.id}`});
     }
@@ -272,9 +292,13 @@ Parameters: id
 Method : Get
 */
 
-Paradigm.get("/author/books/:isbn",(req, res) => {
-    const getListOfAllBooksBySpecificAuthors = database.author.filter((author)=>author.books.includes(req.params.isbn));    
-    if(getListOfAllBooksBySpecificAuthors.length === 0)
+Paradigm.get("/author/books/:isbn",async (req, res) => {
+
+        const getListOfAllBooksBySpecificAuthors = await AuthorModel.find({
+            books : req.params.isbn
+        });
+    //const getListOfAllBooksBySpecificAuthors = database.author.filter((author)=>author.books.includes(req.params.isbn));    
+    if(!getListOfAllBooksBySpecificAuthors)
     {
         return res.json({error: `No author found for given book: ${req.params.isbn}`});
     }
@@ -291,10 +315,11 @@ Parameters: none
 Method : Post
 */
 
-Paradigm.post("/author/new",(req,res)=>{
-    const {newauthor}=req.body;
-    database.author.push(newauthor);
-    return res.json({Authors: database.author, message: "New author was added!!"});
+Paradigm.post("/author/new",async (req,res)=>{
+    const {newauthor}=  req.body;
+    AuthorModel.create(newauthor);
+   // database.author.push(newauthor);
+    return res.json({message: "New author was added!!"});
     });
     
     
@@ -355,8 +380,9 @@ Parameters:
 Method : Get
 */
 
-Paradigm.get("/publication",(req,res) => {
-    return res.json({Publications : database.publication});
+Paradigm.get("/publication",async (req,res) => {
+    const getNewPublication = await PublicationModel.find();
+    return res.json({Publications : getNewPublication});
 });
 
 
@@ -409,8 +435,9 @@ Method : Post
 
 Paradigm.post("/publication/new",(req,res)=>{
     const {newPublication}=req.body;
-    database.publication.push(newPublication);
-    return res.json({Publications: database.publication, message: "New publication was added!!"});
+    PublicationModel.create(newPublication);
+   // database.publication.push(newPublication);
+    return res.json({Publications: PublicationModel, message: "New publication was added!!"});
     });
 
 
