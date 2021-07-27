@@ -1,8 +1,16 @@
+require("dotenv").config(); //should be first l
+
 //Framework
 const express = require("express");
 
+
+//Way to react with MOngo DB and aur application
+const mongoose = require("mongoose");
+
+
 //Database
 const database = require("./Database/index");
+
 
 //initializing express
 const Paradigm = express();
@@ -12,6 +20,22 @@ Paradigm.use(express.json());
 
 // shows all the books in the database
 // info to be written on every api so, that other developers will know what it is and all
+
+//Establish Connection with MongoDB database
+//mongodb+srv://Rutuja_5113:IEhdF3h4pepJwLPO@nosqldbmanagement.ocjuv.mongodb.net/Paradigm?retryWrites=true&w=majority  we cant write it this way as it is exposing sensitive information, so we will download a package dotenv for application security
+// we should store this type of data in environment variables so that this information wont be exposed
+
+//process is processor/runtime
+mongoose.connect(process.env.MONGO_URL,
+{
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+  useCreateIndex: true
+}
+).then(
+    ()=>console.log("Connection Established")
+);
 
 
 //using get method, we recieve from database and using reponse we post back to server
@@ -462,3 +486,7 @@ return res.json({Updated_List_Of_Publications: database.publication, Updated_Lis
 });
 
 Paradigm.listen(3000, () => console.log("Server is running"));
+
+
+//We need someone to talk to mongodb in which mongodb understands us => Mongoose
+//we need something to talk to us in the way we understand => JavaScript
