@@ -78,3 +78,32 @@ delete a publication from books and publication too
 */
 
 //====================================================================================================================
+/*
+MongoDB Operators -> powerfull yet we dont use it much
+to avoid using map , filter and replace array and all that..
+
+Instead we use mongoDB operators:
+
+simple operators:
+[ 
+    update operators:
+    $ is necessary for mongoDB to know that we are using operator
+    LOGICAL
+    $inc -> increment -> -1 to decrement by 1 as it dont have decrement operator
+    $min -> minimum 
+    $max -> maximum
+    $set -> sets a data to an object property
+    book.title = "hello";
+    $unset -> removes a property from an object
+    book = {
+        title = "hello"
+    };if you dont want this key or to delete this property we use unset
+
+
+    ARRAYS
+    $push
+    $pop
+    $pull -> ["a","b","c"] if you want extract a, then just say name: "a" or  $pull:{name: a};  This is similar to filter i.e. to remove any array
+    $addToSet  ->when you push a data and you dont want duplicate entries for eg. [1,2,1,2], if you dont want duplicates addToSet which nothing but push and clever to check to if data already exist already dont push
+
+*/

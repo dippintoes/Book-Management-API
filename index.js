@@ -128,9 +128,11 @@ Paradigm.get("/books/author/:id",async (req, res) => {
 
     const getBookBySpecificAuthor = await BookModel.findOne({
         author : req.params.id
-    })
-   // const getBookBySpecificAuthor = database.books.filter((book)=>book.author.includes(req.params.id)); 
+    });
+
+    //const getBookBySpecificAuthor = database.books.filter((book)=>book.author.includes(req.params.id)); 
     //include get the value and match it with the category array but only if contains only strings   
+
     if(!getBookBySpecificAuthor)
     {
         return res.json({error: `No book found for the author ${req.params.id}`});
@@ -158,27 +160,43 @@ Paradigm.post("/books/new",async (req,res)=>{
     });
     
 
-    /*
+/*
     Route :  /books/update/
     Description : to update the title of book
     Access : Public
     Parameters: isbn
     Method : Put
-    */
+*/
     
-    Paradigm.put("/books/update/:isbn",(req,res)=>{
-    //using for each we can directly modify the array from database and if we use map, we will get new array and it will get tedious
-    database.books.forEach((book)=>{
-        if(book.ISBN === req.params.isbn){
-            book.title = req.body.bookTitle;
-            book.pubDate = req.body.newPubDate;
-            book.language= req.body.newLang;
-            book.numPage=req.body.newNumPage;
-            return;
-        }
-    });
-    return res.json({Books: database.books});
-    });
+Paradigm.put("/books/update/:isbn",async (req,res)=>{
+//using for each we can directly modify the array from database and if we use map, we will get new array and it will get tedious
+
+const updatedBook = await BookModel.findOneAndUpdate(
+{
+    ISBN: req.params.isbn,//object to find
+},
+{
+    title: req.body.bookTitle,
+    pubDate: req.body.newPubDate,
+    language: req.body.newLang,
+    numPage:req.body.newNumPage,
+},
+{
+    new: true,//to get newly updated data, it's not compulsory
+});
+
+ database.books.forEach((book)=>{
+ if(book.ISBN === req.params.isbn){
+    book.title = req.body.bookTitle;
+    book.pubDate = req.body.newPubDate;
+    book.language= req.body.newLang;
+    book.numPage=req.body.newNumPage;
+    return;
+    }
+});
+return res.json({UpdatedBooks: updatedBook});
+});
+
 
 /*
 Route :  /books/delete/
@@ -187,15 +205,26 @@ Access : Public
 Parameters: isbn
 Method : Delete
 */  
-Paradigm.delete("/books/delete/:isbn",(req,res)=>{
+
+
+Paradigm.delete("/books/delete/:isbn",async (req,res)=>
+{
+const deleteBook = await BookModel.findOneAndDelete({
+    ISBN: req.params.isbn
+});
+/*    
 const updatedBookDatabase = database.books.filter(
 (book) => book.ISBN !== req.params.isbn
 );
-database.books = updatedBookDatabase;
-return res.json({Updated_List_of_books: database.books});
-});
+database.books = updatedBookDatabase;//replacing with updated array*/
+return res.json({DeletedBook: deleteBook});
+}
+);
+
+
 //we should change the database objets to let because if const then we wont be able to replace it.
 //Also, in filter new array will be created which will not contain the given param
+
 
 
 
@@ -207,9 +236,24 @@ Parameters: isbn,authorId
 Method : Delete
 */    
 
-Paradigm.delete("/books/delete/author/:isbn/:authorId",(req,res)=>{
+Paradigm.delete("/books/delete/author/:isbn/:authorId",async (req,res)=>{
 //update the book database
+//findOneAndUpdate because we are just deletinf from array and not whole book
+const updateBook = await BookModel.findOneAndUpdate(
+{
+    ISBN : req.params.isbn
+},
+{
+    $pull: {
+        author: req.params.authorId
+    }
+},
+{
+    new: true
+});
+/*
 //use foreach first because we are not replacing whole database, just one preoperty inside the database
+
 database.books.forEach((book)=>{
     if(book.ISBN === req.params.isbn){
         const newAuthorList = book.author.filter(
@@ -218,10 +262,23 @@ database.books.forEach((book)=>{
         book.author=newAuthorList;
         return;
     }
-});
+});*/
 
 //update author database
 
+const updateAuthors = await AuthorModel.findOneAndUpdate(
+{
+    id: req.params.authorId
+},
+{
+    $pull:{
+        books: req.params.isbn
+    }
+},
+{
+    new: true
+});
+/*
 database.author.forEach((author1)=>{
     if(author1.id === req.params.authorId){
         const newBookList = author1.books.filter(
@@ -231,9 +288,9 @@ database.author.forEach((author1)=>{
         author1.books = newBookList;
         return;
     }
-});
+});*/
 
-return res.json({book: database.books, Author: database.author, message: "The author was deleted succesfully"});
+return res.json({book: updateBook, Author: updateAuthors, message: "The author was deleted succesfully"});
 
 });
 
@@ -324,29 +381,63 @@ Paradigm.post("/author/new",async (req,res)=>{
     
     
     
-    /*
-    Route :  /books/author/update/
-    Description : to update the author in both author and books
-    Access : Public
-    Parameters: isbn
-    Method : Put
-    */
+/*
+  Route :  /books/author/update/
+  Description : to update or add the author in both author and books
+  Access : Public
+  Parameters: isbn
+  Method : Put
+*/
 
-    Paradigm.put("/books/author/update/:isbn",(req,res)=>{
-    //updating book database
-    database.books.forEach((book)=>{
-        if(book.ISBN === req.params.isbn)
-         return book.author.push(req.body.newAuthor);
-    });
+Paradigm.put("/books/author/update/:isbn",async (req,res)=>{
+//updating book database
+const updateAuthorInBook = await BookModel.findOneAndUpdate({
+    ISBN: req.params.isbn
+},
+{
+    $addToSet:{
+        author: req.body.newAuthor,
+    }
+},
+{
+    new : true,
+}
+);
+/*
+database.books.forEach((book)=>{
+    if(book.ISBN === req.params.isbn)
+    return book.author.push(req.body.newAuthor);
+});
+    */
+//updating authors database
+
+const UpdateAuthorInAuthor = await AuthorModel.findOneAndUpdate(
+    {
+        id: req.body.newAuthor,
+    },
+    {
+        $addToSet: {
+            books: req.params.isbn,
+        }
+    },
+    {
+        new: true,
+    }
+);
+
+/*
+database.author.forEach((author)=>{
+if(author.id === req.body.newAuthor)
+   return author.books.push(req.params.isbn);
+});*/
     
-    //updating authors database
-    database.author.forEach((author)=>{
-    if(author.id === req.body.newAuthor)
-     return author.books.push(req.params.isbn);
-    });
-    
-    return res.json({Books: database.books,Author: database.author, message: "New Author was added!!!"});
-    });
+return res.json({Books: updateAuthorInBook,Author: UpdateAuthorInAuthor, message: "New Author was added!!!"});
+});
+
+
+
+
+
  
 /*
 Route :  /author/delete/
@@ -355,12 +446,16 @@ Access : Public
 Parameters: id
 Method : Delete
 */ 
-Paradigm.delete("/author/delete/:id",(req,res)=>{
+Paradigm.delete("/author/delete/:id", async(req,res)=>{
+    const updatedAuthorList = await AuthorModel.findOneAndDelete({
+        id : req.params.id
+    });
+    /*
     const updatedAuthorList = database.author.filter(
         (authors)=>authors.id !== req.params.id
     );
-    database.author=updatedAuthorList;
-    res.json({Updated_List_of_authors: database.author, message: "Desired author was deleted successfully!!"});
+    database.author=updatedAuthorList;*/
+    res.json({Updated_List_of_authors: updatedAuthorList, message: "Desired author was deleted successfully!!"});
 });
 
 
@@ -396,8 +491,12 @@ Method : Get
 */
 
 Paradigm.get("/publication/:id",(req,res) => {
-    const getSpecificPublication = database.publication.filter((pub)=> pub.id===req.params.id);
-    if(getSpecificPublication.length===0)
+
+    const getSpecificPublication = PublicationModel.findOne({
+        id : req.params.id
+    });
+  //  const getSpecificPublication = database.publication.filter((pub)=> pub.id===req.params.id);
+    if(!getSpecificPublication)
     {
         return res.json({error: `No publication found with given id ${req.params.id}`});
     }
@@ -413,10 +512,14 @@ Parameters: isbn
 Method : Get
 */
 
-Paradigm.get("/publication/books/:isbn",(req,res)=>{
-    const getListOfPublicationsBasedonBook = database.publication.filter((pubspec) => pubspec.books.includes(req.params.isbn));
+Paradigm.get("/publication/books/:isbn",async (req,res)=>{
 
-    if(getListOfPublicationsBasedonBook.length === 0)
+    const getListOfPublicationsBasedonBook = await PublicationModel.find({
+        books : req.params.isbn
+    });
+    //const getListOfPublicationsBasedonBook = database.publication.filter((pubspec) => pubspec.books.includes(req.params.isbn));
+
+    if(!getListOfPublicationsBasedonBook)
     {
         return res.json({error: `List of publications related to given book no. ${req.params.isbn} was not found`});
     }
@@ -450,17 +553,42 @@ Parameters: isbn
 Method : PUT
 */
 
-Paradigm.put("/books/publication/update/:isbn",(req,res)=>{
-    database.books.forEach((book)=>{
+
+Paradigm.put("/books/publication/update/:isbn", async (req,res)=>{
+
+    const addNewPublicationinBook = await BookModel.findOneAndUpdate({
+        ISBN: req.params.isbn,
+    },
+    {
+        $addToSet:{
+            publications: req.body.newPublication
+        }
+    },
+    {
+        new: true
+    });
+    /*database.books.forEach((book)=>{
         if(book.ISBN===req.params.isbn)
             return book.publications.push(req.body.newPublication);
+    });*/
+    const addNewBookinPublication = await PublicationModel.findOneAndUpdate({
+        id: req.body.newPublication,
+    },
+    {
+        $addToSet:{
+            books: req.params.isbn
+        }
+    },
+    {
+        new: true
     });
+    /*
     database.publication.forEach((public)=>{
         if(public.id===req.body.newPublication)
         return public.books.push(req.params.isbn);
-    });
+    });*/
 
-    return res.json({Books: database.books, Publications : database.publication, message: "New Publication was added!!"})
+    return res.json({Books: addNewPublicationinBook, Publications : addNewBookinPublication, message: "New Publication was added!!"})
 });
 
 /*
@@ -471,12 +599,17 @@ Parameters: id
 Method : Delete
 */ 
 
-Paradigm.delete("/publication/delete/:id",(req,res)=>{
+Paradigm.delete("/publication/delete/:id",async(req,res)=>{
+
+    const updatedListofPublication = await PublicationModel.findOneAndDelete({
+        id : req.params.id
+    });
+    /*
     const updatedListofPublication = database.publication.filter(
         (publi)=>publi.id!==req.params.id
     );
-    database.publication=updatedListofPublication;
-    res.json({Updated_List_of_Publication : database.publication, message: "Desired publication was deleted successfully!!"});
+    database.publication=updatedListofPublication;*/
+    res.json({Updated_List_of_Publication : updatedListofPublication, message: "Desired publication was deleted successfully!!"});
 });
 
 
@@ -488,8 +621,21 @@ Parameters: id,isbn
 Method : Delete
 */ 
 
-Paradigm.delete("/publication/books/delete/:id/:isbn",(req,res)=>{
+Paradigm.delete("/publication/books/delete/:id/:isbn",async (req,res)=>{
 //updating books database
+
+const updatePublication = await PublicationModel.findOneAndUpdate({
+    id : req.params.id
+},
+{
+    $pull : {
+        books: req.params.isbn
+    }
+},
+{
+    new: true
+});
+/*
 database.publication.forEach((publication1)=>
 {
     if(publication1.id===req.params.id){
@@ -500,8 +646,23 @@ database.publication.forEach((publication1)=>
         publication1.books= newpublist;
         return;
     }
-});
+});*/
+
 //updating publications database
+
+const updateBooks = await BookModel.findOneAndUpdate({
+    ISBN : req.params.isbn
+},
+{
+    $pull : {
+        publications: req.params.id
+    }
+},
+{
+    new: true
+});
+
+/*
 database.books.forEach((book)=>{
     if(book.ISBN===req.params.isbn){
         const newupdatedlist=book.publications.filter(
@@ -512,8 +673,8 @@ database.books.forEach((book)=>{
         return;
     }
 });
-
-return res.json({Updated_List_Of_Publications: database.publication, Updated_List_Of_Books : database.books, message: "Publications were deleted!!!" })
+*/
+return res.json({Updated_List_Of_Publications: updatePublication, Updated_List_Of_Books : updateBooks, message: "Publications were deleted!!!" })
 
 });
 
